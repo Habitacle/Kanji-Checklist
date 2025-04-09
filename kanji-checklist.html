@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanji Checklist</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 1em;
+            align-items: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 8px;
+        }
+
+        .kanji {
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-size: 1.5em;
+            cursor: pointer;
+            border-radius: 6px;
+            user-select: none;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .kanji.checked {
+            background-color: #ccc;
+            color: #666;
+        }
+
+        .counter {
+            text-align: center;
+            margin-top: 1em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="controls">
+        <input type="text" id="search" placeholder="Search kanji or meaning">
+        <select id="sortOption">
+            <option value="default">Sort: Default</option>
+            <option value="checked">Sort: Checked</option>
+            <option value="unchecked">Sort: Unchecked</option>
+        </select>
+        <button id="importButton">Import File</button>
+        <input type="file" id="importFile" accept=".json,.csv" style="display:none">
+        <button onclick="exportSet('json')">Export JSON</button>
+        <button onclick="exportSet('csv')">Export CSV</button>
+        <button id="toggleCheckedOnly">Show Checked</button>
+        <button onclick="resetChecklist()">Reset</button>
+    </div>
+
+    <div id="kanjiGrid" class="grid"></div>
+    <div class="counter" id="counter"></div>
+
+    <script>
+        const rtkSet = [];
+
+        const defaultKanji = rtkSet.map(k => k.kanji);
+        const storedMeanings = JSON.parse(localStorage.getItem("kanjiMeanings")) || {};
+        const kanjiMeanings = {
+            ...storedMeanings
+        };
+
+        rtkSet.forEach(k => kanjiMeanings[k.kanji] = k.meaning);
+
+        let kanjiList = JSON.parse(localStorage.getItem("kanjiList")) || defaultKanji;
+        let checked = new Set(JSON.parse(localStorage.getItem("checkedKanji")) || []);
+        let showOnlyChecked = false;
+
+        const grid = document.getElementById("kanjiGrid");
+        const counter = document.getElementById("counter");
+        const searchInput = document.getElementById("search");
+        const sortOption = document.getElementById("sortOption");
+        const importFileInput = document.getElementById("importFile");
+        const toggleCheckedOnlyBtn = document.getElementById("toggleCheckedOnly");
+
+        function saveState() {
+            localStorage.setItem("kanjiList", JSON.stringify(kanjiList));
+            localStorage.setItem("checkedKanji", JSON.stringify([...checked]));
+            localStorage.setItem("kanjiMeanings", JSON.stringify(kanjiMeanings));
+        }
+
+        function renderGrid() {
+            const search = searchInput.value.trim().toLowerCase();
+            grid.innerHTML = "";
+
+            let filtered = kanjiList.filter(k => {
+                const meaning = kanjiMeanings[k] || "";
+                return k.includes(search) || meaning.toLowerCase().includes(search);
+            });
+
+            if (showOnlyChecked) {
+                filtered = filtered.filter(k => checked.has(k));
+            }
+
+            if (sortOption.value === "checked") {
+                filtered.sort((a, b) => (checked.has(b) - checked.has(a)));
+            } else if (sortOption.value === "unchecked") {
+                filtered.sort((a, b) => (checked.has(a) - checked.has(b)));
+            }
+
+            filtered.forEach(kanji => {
+                const div = document.createElement("div");
+                div.textContent = kanji;
+                div.className = "kanji" + (checked.has(kanji) ? " checked" : "");
+                div.title = kanjiMeanings[kanji] || "";
+                div.onclick = () => toggleKanji(kanji, div);
+                grid.appendChild(div);
+            });
+
+            counter.textContent = `Learned: ${checked.size} / ${kanjiList.length}`;
+        }
+
+        function toggleKanji(kanji, div) {
+            if (checked.has(kanji)) {
+                checked.delete(kanji);
+                div.classList.remove("checked");
+            } else {
+                checked.add(kanji);
+                div.classList.add("checked");
+            }
+            saveState();
+            counter.textContent = `Learned: ${checked.size} / ${kanjiList.length}`;
+        }
+
+        importFileInput.addEventListener("change", () => {
+            const file = importFileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    if (file.name.endsWith(".json")) {
+                        const data = JSON.parse(reader.result);
+                        if (Array.isArray(data.kanjiList)) {
+                            kanjiList = data.kanjiList.map(k => k.kanji);
+                            data.kanjiList.forEach(k => {
+                            if (k.kanji && k.meaning) {
+                                kanjiMeanings[k.kanji] = k.meaning;
+                            }
+                            });
+                        }
+
+                        if (Array.isArray(data.checked)) {
+                            checked = new Set(data.checked);
+                        } else {
+                            checked.clear();
+                        }
+                    } else if (file.name.endsWith(".csv")) {
+                        const lines = reader.result.trim().split(/\r?\n/);
+                        kanjiList = [];
+                        checked = new Set();
+                        lines.slice(1).forEach(line => {
+                            const [kanji, meaning] = line.split(",");
+                            if (kanji) {
+                                kanjiList.push(kanji);
+                                if (meaning) kanjiMeanings[kanji] = meaning;
+                            }
+                        });
+                    }
+                    saveState();
+
+                    renderGrid();
+                } catch (e) {
+                    alert("Import failed: " + e.message);
+                }
+            };
+            reader.readAsText(file);
+            importFileInput.value = "";
+        });
+
+        function exportSet(type) {
+            let output;
+            if (type === 'json') {
+                const listLines = kanjiList.map(k => `  {"kanji": "${k}", "meaning": "${kanjiMeanings[k] || ""}"}`);
+                const checkedLine = [...checked].map(k => `"${k}"`).join(", ");
+
+                output = `{"kanjiList": [${listLines.join(",\n")}],
+                "checked": [${checkedLine}]}`;
+
+                downloadFile('kanji-checklist.json', output);
+            } else if (type === 'csv') {
+                output = 'Kanji,Meaning,Checked\n';
+                kanjiList.forEach(k => {
+                    output += `${k},${kanjiMeanings[k] || ""},${checked.has(k) ? 'yes' : 'no'}\n`;
+                });
+                downloadFile('kanji-checklist.csv', output);
+            }
+        }
+
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], {
+                type: 'text/plain'
+            });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function resetChecklist() {
+            if (confirm("Reset all checked kanji?")) {
+                checked.clear();
+                saveState();
+                renderGrid();
+            }
+        }
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            const listName = params.get("list");
+            if (!listName) return;
+
+            const url = `${listName}.json`;
+
+            fetch(url)
+                .then(res => res.text())
+                .then(text => {
+                try {
+                    const data = JSON.parse(text);
+                    if (Array.isArray(data.kanjiList)) {
+                    kanjiList = data.kanjiList.map(k => k.kanji);
+                    data.kanjiList.forEach(k => {
+                        if (k.kanji && k.meaning) {
+                        kanjiMeanings[k.kanji] = k.meaning;
+                        }
+                    });
+                    }
+
+                    if (Array.isArray(data.checked)) {
+                    checked = new Set(data.checked);
+                    } else {
+                    checked.clear();
+                    }
+
+                    saveState();
+                    renderGrid();
+                } catch (e) {
+                    alert("Failed to load kanji list from file.");
+                }
+                })
+                .catch(() => alert("Could not load list: " + url));
+            }
+
+            function loadCSV(url) {
+                return fetch(url)
+                    .then(res => res.text())
+                    .then(text => {
+                    const lines = text.trim().split(/\r?\n/);
+                    kanjiList = [];
+                    checked = new Set();
+                    lines.slice(1).forEach(line => {
+                        const [kanji, meaning] = line.split(",");
+                        if (kanji) {
+                        kanjiList.push(kanji);
+                        if (meaning) kanjiMeanings[kanji] = meaning;
+                        }
+                    });
+                    saveState();
+                    renderGrid();
+                    })
+                    .catch(() => alert("Failed to load default CSV."));
+                }
+
+        toggleCheckedOnlyBtn.addEventListener("click", () => {
+            showOnlyChecked = !showOnlyChecked;
+            toggleCheckedOnlyBtn.textContent = showOnlyChecked ? "Show All" : "Show Checked";
+            renderGrid();
+        });
+
+        searchInput.addEventListener("input", renderGrid);
+        sortOption.addEventListener("change", renderGrid);
+        document.getElementById("importButton").addEventListener("click", () => {
+            importFileInput.click();
+        });
+
+        renderGrid();
+        window.addEventListener("DOMContentLoaded", async () => {
+            loadFromURL();
+            if (!kanjiList || kanjiList.length === 0) {
+                await loadCSV("rtk-list.csv");
+            } else {
+                renderGrid();
+            }
+        });
+    </script>
+</body>
+
+</html>

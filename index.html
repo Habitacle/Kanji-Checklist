@@ -50,6 +50,42 @@
             margin-top: 1em;
             font-weight: bold;
         }
+        .dropdown {
+        position: relative;
+        display: inline-block;
+        }
+
+        .hamburger {
+        font-size: 1.5em;
+        padding: 5px 10px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        }
+
+        .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 220px;
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+        padding: 10px;
+        border-radius: 5px;
+        flex-direction: column;
+        gap: 8px;
+        }
+
+        .dropdown.open .dropdown-content {
+        display: flex;
+        }
+
+        .dropdown-content button,
+        .dropdown-content input {
+        width: 100%;
+        margin-top: 5px;
+        }
+
     </style>
 </head>
 
@@ -57,17 +93,25 @@
     <div class="controls">
         <input type="text" id="search" placeholder="Search kanji or meaning">
         <select id="sortOption">
-            <option value="default">Sort: Default</option>
-            <option value="checked">Sort: Checked</option>
-            <option value="unchecked">Sort: Unchecked</option>
+          <option value="default">Sort: Default</option>
+          <option value="checked">Sort: Checked</option>
+          <option value="unchecked">Sort: Unchecked</option>
         </select>
-        <button id="importButton">Import File</button>
-        <input type="file" id="importFile" accept=".json,.csv,text/*" style="display:none">
-        <button onclick="exportSet('json')">Export JSON</button>
-        <button onclick="exportSet('csv')">Export CSV</button>
-        <button id="toggleCheckedOnly">Show Checked</button>
-        <button onclick="resetChecklist()">Reset</button>
-    </div>
+      
+        <div class="dropdown">
+          <button class="hamburger">☰</button>
+          <div class="dropdown-content">
+            <input type="file" id="importFile" accept=".json,.csv" style="display:none">
+            <button onclick="document.getElementById('importFile').click()">Import File</button>
+            <button onclick="promptImportURL()">Load from URL</button>       
+            <button onclick="exportSet('json')">Export JSON</button>
+            <button onclick="exportSet('csv')">Export CSV</button>
+            <button id="toggleCheckedOnly">Show Checked</button>
+            <button onclick="resetChecklist()">Reset</button>
+          </div>
+        </div>
+      </div>
+      
 
     <div id="kanjiGrid" class="grid"></div>
     <div class="counter" id="counter"></div>
@@ -93,6 +137,10 @@
         const sortOption = document.getElementById("sortOption");
         const importFileInput = document.getElementById("importFile");
         const toggleCheckedOnlyBtn = document.getElementById("toggleCheckedOnly");
+
+        document.querySelector(".hamburger").addEventListener("click", () => {
+        document.querySelector(".dropdown").classList.toggle("open");
+        });
 
         function saveState() {
             localStorage.setItem("kanjiList", JSON.stringify(kanjiList));
@@ -226,83 +274,71 @@
                 renderGrid();
             }
         }
-        function loadFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            const listName = params.get("list");
-            if (!listName) return;
+        function promptImportURL() {
+            const url = prompt("Paste a URL to a .json or .csv file:");
+            if (!url) return;
+            loadURL(url)
+        }
 
-            const url = `${listName}.json`;
-
+        function loadURL(url) {
             fetch(url)
-                .then(res => res.text())
-                .then(text => {
-                try {
-                    const data = JSON.parse(text);
-                    if (Array.isArray(data.kanjiList)) {
-                    kanjiList = data.kanjiList.map(k => k.kanji);
-                    data.kanjiList.forEach(k => {
-                        if (k.kanji && k.meaning) {
-                        kanjiMeanings[k.kanji] = k.meaning;
-                        }
-                    });
-                    }
-
-                    if (Array.isArray(data.checked)) {
-                    checked = new Set(data.checked);
-                    } else {
-                    checked.clear();
-                    }
-
-                    saveState();
-                    renderGrid();
-                } catch (e) {
-                    alert("Failed to load kanji list from file.");
+            .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch file.");
+            return res.text();
+            })
+            .then(text => {
+            if (url.endsWith(".json")) {
+                const parsed = JSON.parse(text);
+                if (Array.isArray(parsed.kanjiList)) {
+                kanjiList = parsed.kanjiList.map(k => typeof k === "object" ? k.kanji : k);
+                parsed.kanjiList.forEach(k => {
+                    if (k.kanji && k.meaning) kanjiMeanings[k.kanji] = k.meaning;
+                });
+                checked = new Set(parsed.checked || []);
                 }
-                })
-                .catch(() => alert("Could not load list: " + url));
+            } else if (url.endsWith(".csv")) {
+                const lines = text.trim().split(/\r?\n/);
+                kanjiList = [];
+                checked = new Set();
+                lines.slice(1).forEach(line => {
+                const [kanji, meaning, isChecked] = line.split(",");
+                if (kanji) {
+                    kanjiList.push(kanji);
+                    if (meaning) kanjiMeanings[kanji] = meaning;
+                    if (isChecked && isChecked.trim().toLowerCase() === "yes") {
+                    checked.add(kanji);
+                    }
+                }
+                });
             }
-
-            function loadCSV(url) {
-                return fetch(url)
-                    .then(res => res.text())
-                    .then(text => {
-                    const lines = text.trim().split(/\r?\n/);
-                    kanjiList = [];
-                    checked = new Set();
-                    lines.slice(1).forEach(line => {
-                        const [kanji, meaning] = line.split(",");
-                        if (kanji) {
-                        kanjiList.push(kanji);
-                        if (meaning) kanjiMeanings[kanji] = meaning;
-                        }
-                    });
-                    saveState();
-                    renderGrid();
-                    })
-                    .catch(() => alert("Failed to load default CSV."));
-                }
-
-        toggleCheckedOnlyBtn.addEventListener("click", () => {
-            showOnlyChecked = !showOnlyChecked;
-            toggleCheckedOnlyBtn.textContent = showOnlyChecked ? "Show All" : "Show Checked";
+            saveState();
             renderGrid();
-        });
-
-        searchInput.addEventListener("input", renderGrid);
-        sortOption.addEventListener("change", renderGrid);
-        document.getElementById("importButton").addEventListener("click", () => {
-            importFileInput.click();
-        });
-
-        renderGrid();
-        window.addEventListener("DOMContentLoaded", async () => {
-            loadFromURL();
-            if (!kanjiList || kanjiList.length === 0) {
-                await loadCSV("rtk-list.csv");
-            } else {
-                renderGrid();
+            })
+            .catch(err => alert("Error loading file: " + err.message));
             }
-        });
+
+            function showAlert(message) {
+                alert(message);
+            }
+
+            toggleCheckedOnlyBtn.addEventListener("click", () => {
+                showOnlyChecked = !showOnlyChecked;
+                toggleCheckedOnlyBtn.textContent = showOnlyChecked ? "Show All" : "Show Checked";
+                renderGrid();
+            });
+
+            searchInput.addEventListener("input", renderGrid);
+            sortOption.addEventListener("change", renderGrid);
+
+            renderGrid();
+
+            window.addEventListener("DOMContentLoaded", async () => {
+                await loadFromURL();
+                if (!kanjiList || kanjiList.length === 0) {
+                    await loadURL("rtk-list.csv");
+                }
+            });
+
     </script>
 </body>
 

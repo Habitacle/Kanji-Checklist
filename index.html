@@ -342,7 +342,6 @@
         sortOption.addEventListener("change", renderGrid);
 
         window.addEventListener("DOMContentLoaded", async () => {
-            await loadFromURL();
             if (!kanjiList || kanjiList.length === 0) {
                 await loadURL("rtk-list.csv");
             }

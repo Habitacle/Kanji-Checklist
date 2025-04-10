@@ -288,35 +288,29 @@
         applyTheme(current === "dark" ? "light" : "dark");
         });
         function copyJSON() {
-            const data = kanjiList.map(k => ({ kanji: k, meaning: kanjiMeanings[k] || "" }));
-            const output = JSON.stringify({ kanjiList: data, checked: [...checked] });
-
+            const output = JSON.stringify([...checked]);
             navigator.clipboard.writeText(output)
-                .then(() => alert("JSON copied to clipboard!"))
-                .catch(err => alert("Failed to copy: " + err));
-            }
+            .then(() => alert("Checked kanji copied to clipboard!"))
+            .catch(err => alert("Failed to copy: " + err));
+        }
+        
         function pasteJSON() {
-            const input = prompt("Paste your JSON checklist:");
+            const input = prompt("Paste your checked kanji JSON array (e.g. [\"日\",\"月\"])");
             if (!input) return;
-
+            
             try {
                 const parsed = JSON.parse(input);
-
-                if (Array.isArray(parsed.kanjiList)) {
-                kanjiList = parsed.kanjiList.map(k => k.kanji);
-                parsed.kanjiList.forEach(k => {
-                    if (k.kanji && k.meaning) kanjiMeanings[k.kanji] = k.meaning;
-                });
-                }
-
-                checked = new Set(parsed.checked || []);
+                if (!Array.isArray(parsed)) throw new Error("Not an array");
+                
+                checked = new Set(parsed);
                 saveState();
                 renderGrid();
-                alert("Checklist imported from JSON!");
+                alert("Checked kanji updated!");
             } catch (e) {
-                alert("Invalid JSON format.");
+                alert("Invalid JSON format. Must be an array of kanji.");
             }
         }
+
 
     </script>
 </body>

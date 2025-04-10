@@ -17,10 +17,10 @@ body {
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
-  overflow-x: auto;
   align-items: center;
   margin-bottom: 1em;
   padding-bottom: 5px;
+  justify-content: flex-end;
 }
 .grid {
   display: grid;

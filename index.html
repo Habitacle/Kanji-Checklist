@@ -6,99 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="favicon.ico">
     <title>Kanji Checklist</title>
-    <style>
-        :root {
-            --text-color: #8B4513;
-            --bg-color: #FFEBCD;
-            --btn-color: #FFA07A;
-        }
-        html *{
-            font-family: "Noto Sans", sans-serif;
-            color-scheme: light;
-        }
-        @media (prefers-color-scheme: dark) {
-            html {
-            --text-color: #8B4513;
-            --bg-color: #FFEBCD;
-            --btn-color: #FFA07A;
-        }
-        }
-        body {
-            padding: 20px;
-            max-width: 800px;
-            margin: auto;
-            background: var(--bg-color);
-        }
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: space-between;
-            margin-bottom: 1em;
-            align-items: center;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-            gap: 8px;
-        }
-        .kanji {
-            color: var(--text-color);
-            background-color: var(--btn-color);
-            text-align: center;
-            padding: 10px;
-            border: 1px solid #1d1416;
-            font-size: 1.5em;
-            cursor: pointer;
-            border-radius: 6px;
-            user-select: none;
-            transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
-            box-shadow: inset -1px -1px 4px rgba(0, 0, 0, 0.4);
-        }
-        .kanji.checked {
-            background-color: #ddd;
-            color: #555;
-            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        .counter {
-            text-align: center;
-            margin-top: 1em;
-            font-weight: bold;
-        }
-        .dropdown {
-        position: relative;
-        display: inline-block;
-        }
-        .hamburger {
-        font-size: 1.5em;
-        padding: 5px 10px;
-        cursor: pointer;
-        border: none;
-        background: none;
-        }
-        .dropdown-content {
-        display: none;
-        position: absolute;
-        background: var(--bg-color);
-        min-width: 220px;
-        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-        z-index: 1;
-        padding: 10px;
-        border-radius: 5px;
-        flex-direction: column;
-        gap: 8px;
-        right: 0;
-        }
-        .dropdown.open .dropdown-content {
-        display: flex;
-        }
-        .dropdown-content button,
-        .dropdown-content input {
-        width: 100%;
-        margin-top: 5px;
-        }
-
-    </style>
+    <link href="style.css" rel="stylesheet">
 </head>
 
 <body>
@@ -120,6 +28,9 @@
             <button onclick="exportSet('csv')">Export CSV</button>
             <button id="toggleCheckedOnly">Show Checked Only</button>
             <button onclick="resetChecklist()">Reset</button>
+            <label style="margin-top:10px;">
+                <input type="checkbox" id="darkToggle"> Dark Mode
+            </label>
           </div>
         </div>
       </div>
@@ -356,7 +267,21 @@
         });
 
         renderGrid();
+        const darkToggle = document.getElementById("darkToggle");
 
+        function applyTheme(theme) {
+        document.body.classList.remove("light", "dark");
+        document.body.classList.add(theme);
+        localStorage.setItem("theme", theme);
+        darkToggle.checked = theme === "dark";
+        }
+
+        const savedTheme = localStorage.getItem("theme") || "light";
+        applyTheme(savedTheme);
+
+        darkToggle.addEventListener("change", () => {
+        applyTheme(darkToggle.checked ? "dark" : "light");
+        });
     </script>
 </body>
 

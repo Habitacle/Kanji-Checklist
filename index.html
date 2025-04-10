@@ -11,6 +11,7 @@
 
 <body>
     <div class="controls">
+
         <input type="text" id="search" placeholder="Search kanji or meaning...">
         <select id="sortOption">
           <option value="default">Sort: Default</option>
@@ -27,6 +28,8 @@
             <button onclick="promptImportURL()">Load from URL</button>       
             <button onclick="exportSet('json')">Export JSON</button>
             <button onclick="exportSet('csv')">Export CSV</button>
+            <button onclick="copyJSON()">Copy JSON</button>
+            <button onclick="pasteJSON()">Paste JSON</button>
             <button id="toggleCheckedOnly">Show Checked Only</button>
             <button onclick="resetChecklist()">Reset</button>
           </div>
@@ -284,6 +287,37 @@
         const current = document.body.classList.contains("dark") ? "dark" : "light";
         applyTheme(current === "dark" ? "light" : "dark");
         });
+        function copyJSON() {
+            const data = kanjiList.map(k => ({ kanji: k, meaning: kanjiMeanings[k] || "" }));
+            const output = JSON.stringify({ kanjiList: data, checked: [...checked] });
+
+            navigator.clipboard.writeText(output)
+                .then(() => alert("JSON copied to clipboard!"))
+                .catch(err => alert("Failed to copy: " + err));
+            }
+        function pasteJSON() {
+            const input = prompt("Paste your JSON checklist:");
+            if (!input) return;
+
+            try {
+                const parsed = JSON.parse(input);
+
+                if (Array.isArray(parsed.kanjiList)) {
+                kanjiList = parsed.kanjiList.map(k => k.kanji);
+                parsed.kanjiList.forEach(k => {
+                    if (k.kanji && k.meaning) kanjiMeanings[k.kanji] = k.meaning;
+                });
+                }
+
+                checked = new Set(parsed.checked || []);
+                saveState();
+                renderGrid();
+                alert("Checklist imported from JSON!");
+            } catch (e) {
+                alert("Invalid JSON format.");
+            }
+        }
+
     </script>
 </body>
 

@@ -8,11 +8,32 @@ html *{
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  html {
-  --text-color: #8B4513;
-  --bg-color: #FFEBCD;
-  --btn-color: #FFA07A;
-}
+  body.light {
+    background-color: #f2f2f2;
+    color: #111;
+  }
+
+  body.light .kanji {
+    background-color: #fff;
+    color: #111;
+    border-color: #bbb;
+    box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.6),
+                inset -2px -2px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  body.light .kanji.checked {
+    background-color: #ddd;
+    color: #444;
+  }
+
+  body.light .dropdown-content,
+  body.light input,
+  body.light select,
+  body.light button {
+    background-color: #fafafa;
+    color: #111;
+    border-color: #ccc;
+  }
 }
 body {
   padding: 20px;

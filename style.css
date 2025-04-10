@@ -7,34 +7,6 @@ html *{
   font-family: "Noto Sans", sans-serif;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  body.light {
-    background-color: #f2f2f2;
-    color: #111;
-  }
-
-  body.light .kanji {
-    background-color: #fff;
-    color: #111;
-    border-color: #bbb;
-    box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.6),
-                inset -2px -2px 4px rgba(0, 0, 0, 0.08);
-  }
-
-  body.light .kanji.checked {
-    background-color: #ddd;
-    color: #444;
-  }
-
-  body.light .dropdown-content,
-  body.light input,
-  body.light select,
-  body.light button {
-    background-color: #fafafa;
-    color: #111;
-    border-color: #ccc;
-  }
-}
 body {
   padding: 20px;
   max-width: 800px;
@@ -110,16 +82,10 @@ width: 100%;
 margin-top: 5px;
 }
 
-body.light {
-  background-color: #fff;
-  color: #000;
-}
-
 body.dark {
   background-color: #1e1e1e;
   color: #eee;
 }
-
 body.dark .kanji {
   background-color: #333;
   color: #eee;
@@ -127,12 +93,10 @@ body.dark .kanji {
   box-shadow: inset 1px 1px 3px rgba(255, 255, 255, 0.1),
               inset -2px -2px 5px rgba(0, 0, 0, 0.5);
 }
-
 body.dark .kanji.checked {
   background-color: #555;
   color: #bbb;
 }
-
 body.dark input,
 body.dark select,
 body.dark button,
@@ -140,4 +104,30 @@ body.dark .dropdown-content {
   background-color: #2a2a2a;
   color: #eee;
   border-color: #555;
+}
+
+@media (prefers-color-scheme: dark) {
+  body.light {
+    background-color: #f2f2f2;
+    color: #111;
+  }
+  body.light .kanji {
+    background-color: #fff;
+    color: #111;
+    border-color: #bbb;
+    box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.6),
+                inset -2px -2px 4px rgba(0, 0, 0, 0.08);
+  }
+  body.light .kanji.checked {
+    background-color: #ddd;
+    color: #444;
+  }
+  body.light .dropdown-content,
+  body.light input,
+  body.light select,
+  body.light button {
+    background-color: #fafafa;
+    color: #111;
+    border-color: #ccc;
+  }
 }

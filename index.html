@@ -17,12 +17,12 @@
           <option value="checked">Sort: Checked</option>
           <option value="unchecked">Sort: Unchecked</option>
         </select>
+
         <button id="themeToggle" title="Toggle Dark Mode" style="font-size: 1.3em; border: none; background: none; cursor: pointer;">🌙</button>
-      
         <div class="dropdown">
           <button class="hamburger">☰</button>
           <div class="dropdown-content">
-            <input type="file" id="importFile" accept=".json,.csv" style="display:none">
+            <input type="file" id="importFile" accept="*/*" style="display:none" capture>
             <button onclick="document.getElementById('importFile').click()">Import File</button>
             <button onclick="promptImportURL()">Load from URL</button>       
             <button onclick="exportSet('json')">Export JSON</button>
@@ -31,7 +31,7 @@
             <button onclick="resetChecklist()">Reset</button>
           </div>
         </div>
-      </div>
+    </div>
       
 
     <div id="kanjiGrid" class="grid"></div>

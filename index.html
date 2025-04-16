@@ -288,10 +288,10 @@
         applyTheme(current === "dark" ? "light" : "dark");
         });
         function copyJSON() {
-            const output = JSON.stringify([...checked]);
+            const output = [...checked].join("");
             navigator.clipboard.writeText(output)
-            .then(() => alert("Checked kanji copied to clipboard!"))
-            .catch(err => alert("Failed to copy: " + err));
+                .then(() => alert("Checked kanji copied to clipboard!"))
+                .catch(err => alert("Failed to copy: " + err));
         }
         
         function pasteJSON() {

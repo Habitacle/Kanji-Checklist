@@ -101,7 +101,8 @@
                 const div = document.createElement("div");
                 div.textContent = kanji;
                 div.className = "kanji" + (checked.has(kanji) ? " checked" : "");
-                div.title = kanjiMeanings[kanji] || "";
+                const index = kanjiList.indexOf(kanji) + 1;
+                div.title = `${index}: ${kanjiMeanings[kanji] || ""}`;
                 div.onclick = () => toggleKanji(kanji, div);
                 grid.appendChild(div);
             });
